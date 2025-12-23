@@ -462,26 +462,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize default group if none exist
-  (async () => {
-    try {
-      const groups = await storage.getAllGroups();
-      if (groups.length === 0) {
-        // Create default group with system user
-        const users = await storage.getAllUsers();
-        const adminUser = users.find((u) => u.isMainAdmin);
-        if (adminUser) {
-          await storage.createGroup({
-            name: "Общая группа",
-            createdBy: adminUser.id,
-          });
-          console.log("Default group created");
-        }
-      }
-    } catch (error) {
-      console.error("Error creating default group:", error);
-    }
-  })();
 
   // Setup expiration cron job
   setupExpirationCron();
