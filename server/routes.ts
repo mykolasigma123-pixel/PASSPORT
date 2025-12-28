@@ -153,6 +153,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }, express.static(uploadsDir));
 
   // Auth routes
+  app.get("/api/login", (req, res) => {
+    res.redirect("/api/auth/login?provider=google");
+  });
+
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
