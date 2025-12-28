@@ -15,7 +15,7 @@ import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser & { isMainAdmin?: boolean; isActive?: boolean }): Promise<User>;
   getAllUsers(): Promise<User[]>;

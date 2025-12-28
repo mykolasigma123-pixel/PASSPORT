@@ -2,7 +2,6 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -143,17 +142,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Temporary bypass for demo purposes
+  // Middleware to simulate authenticated admin user for non-Replit hosting
   app.use((req: any, res, next) => {
-    req.user = { claims: { sub: "admin_user" } };
-    req.isAuthenticated = () => true;
-    req.login = (user: any, cb: any) => cb(null);
-    req.logout = (cb: any) => cb(null);
+    req.user = { id: "admin_user" };
     next();
   });
 
-  // Setup auth middleware
-  // await setupAuth(app);
+  const isAuthenticated = (req: any, res: any, next: any) => next();
 
   // Serve uploads directory
   app.use("/uploads", (req, res, next) => {
@@ -168,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -187,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin management routes
   app.get("/api/admins", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const currentUser = await storage.getUser(userId);
 
       if (!currentUser?.isMainAdmin) {
@@ -204,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/admins/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const currentUser = await storage.getUser(userId);
 
       if (!currentUser?.isMainAdmin) {
@@ -340,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/people", isAuthenticated, upload.single("photo"), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const publicId = generatePublicId();
 
       let photoUrl = "";
