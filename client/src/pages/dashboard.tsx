@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Person, Group, InsertPerson, InsertGroup } from "@shared/schema";
 import { PassportCard } from "@/components/passport-card";
 import { PassportForm } from "@/components/passport-form";
@@ -13,12 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Search, Users, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -32,27 +28,12 @@ export default function Dashboard() {
   const [selectedGroupForEdit, setSelectedGroupForEdit] = useState<Group | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "Требуется авторизация",
-        description: "Выполняется вход в систему...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-    }
-  }, [isAuthenticated, authLoading, toast]);
-
   const { data: people = [], isLoading: peopleLoading } = useQuery<Person[]>({
     queryKey: ["/api/people"],
-    enabled: isAuthenticated,
   });
 
   const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
-    enabled: isAuthenticated,
   });
 
   const createPersonMutation = useMutation({
@@ -64,7 +45,7 @@ export default function Dashboard() {
       formData.append("expirationDate", data.expirationDate);
       formData.append("notes", data.notes || "");
       formData.append("groupId", data.groupId.toString());
-      formData.append("status", data.status.toString());
+      formData.append("status", (data.status ?? true).toString());
       if (data.photo) {
         formData.append("photo", data.photo);
       }
@@ -86,16 +67,7 @@ export default function Dashboard() {
       toast({ title: "Паспорт создан успешно" });
       setIsCreateDialogOpen(false);
     },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Требуется авторизация",
-          description: "Выполняется вход в систему...",
-          variant: "destructive",
-        });
-        setTimeout(() => window.location.href = "/api/login", 500);
-        return;
-      }
+    onError: () => {
       toast({
         title: "Ошибка",
         description: "Не удалось создать паспорт",
@@ -113,7 +85,7 @@ export default function Dashboard() {
       formData.append("expirationDate", data.expirationDate);
       formData.append("notes", data.notes || "");
       formData.append("groupId", data.groupId.toString());
-      formData.append("status", data.status.toString());
+      formData.append("status", (data.status ?? true).toString());
       if (data.photo) {
         formData.append("photo", data.photo);
       }
@@ -136,16 +108,7 @@ export default function Dashboard() {
       setIsEditDialogOpen(false);
       setSelectedPerson(null);
     },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Требуется авторизация",
-          description: "Выполняется вход в систему...",
-          variant: "destructive",
-        });
-        setTimeout(() => window.location.href = "/api/login", 500);
-        return;
-      }
+    onError: () => {
       toast({
         title: "Ошибка",
         description: "Не удалось обновить паспорт",
@@ -164,16 +127,7 @@ export default function Dashboard() {
       setIsDeleteDialogOpen(false);
       setSelectedPerson(null);
     },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Требуется авторизация",
-          description: "Выполняется вход в систему...",
-          variant: "destructive",
-        });
-        setTimeout(() => window.location.href = "/api/login", 500);
-        return;
-      }
+    onError: () => {
       toast({
         title: "Ошибка",
         description: "Не удалось удалить паспорт",
@@ -192,16 +146,7 @@ export default function Dashboard() {
       setIsGroupDialogOpen(false);
       setNewGroupName("");
     },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Требуется авторизация",
-          description: "Выполняется вход в систему...",
-          variant: "destructive",
-        });
-        setTimeout(() => window.location.href = "/api/login", 500);
-        return;
-      }
+    onError: () => {
       toast({
         title: "Ошибка",
         description: "Не удалось создать группу",
@@ -221,16 +166,7 @@ export default function Dashboard() {
       setSelectedGroupForEdit(null);
       setNewGroupName("");
     },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Требуется авторизация",
-          description: "Выполняется вход в систему...",
-          variant: "destructive",
-        });
-        setTimeout(() => window.location.href = "/api/login", 500);
-        return;
-      }
+    onError: () => {
       toast({
         title: "Ошибка",
         description: "Не удалось обновить группу",
@@ -250,16 +186,7 @@ export default function Dashboard() {
       setSelectedGroupForEdit(null);
       setSelectedGroup(null);
     },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Требуется авторизация",
-          description: "Выполняется вход в систему...",
-          variant: "destructive",
-        });
-        setTimeout(() => window.location.href = "/api/login", 500);
-        return;
-      }
+    onError: () => {
       toast({
         title: "Ошибка",
         description: "Не удалось удалить группу. Возможно, в группе есть паспорта",
@@ -278,10 +205,6 @@ export default function Dashboard() {
 
   const activePeople = filteredPeople.filter((p) => p.status);
   const inactivePeople = filteredPeople.filter((p) => !p.status);
-
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-8">
@@ -315,31 +238,29 @@ export default function Dashboard() {
             <div className="text-2xl font-semibold" data-testid="text-total-count">
               {people.length}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider opacity-50">v1.2 (OnRender Ready)</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Активных</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-green-600 dark:text-green-400" data-testid="text-active-count">
-              {people.filter((p) => p.status).length}
+              {activePeople.length}
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Неактивных</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-red-600 dark:text-red-400" data-testid="text-inactive-count">
-              {people.filter((p) => !p.status).length}
+              {inactivePeople.length}
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Групп</CardTitle>
@@ -601,7 +522,7 @@ export default function Dashboard() {
               <Button
                 onClick={() => {
                   if (newGroupName.trim()) {
-                    createGroupMutation.mutate({ name: newGroupName, createdBy: "" });
+                    createGroupMutation.mutate({ name: newGroupName, createdBy: "admin_user" });
                   }
                 }}
                 disabled={!newGroupName.trim() || createGroupMutation.isPending}
@@ -633,11 +554,14 @@ export default function Dashboard() {
               <Button
                 onClick={() => {
                   if (selectedGroupForEdit && newGroupName.trim()) {
-                    updateGroupMutation.mutate({ id: selectedGroupForEdit.id, name: newGroupName });
+                    updateGroupMutation.mutate({
+                      id: selectedGroupForEdit.id,
+                      name: newGroupName,
+                    });
                   }
                 }}
                 disabled={!newGroupName.trim() || updateGroupMutation.isPending}
-                data-testid="button-submit-edit-group"
+                data-testid="button-save-group"
               >
                 Сохранить
               </Button>
@@ -651,15 +575,15 @@ export default function Dashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить группу?</AlertDialogTitle>
             <AlertDialogDescription>
-              Вы уверены, что хотите удалить группу "{selectedGroupForEdit?.name}"? 
-              В группе не должно быть паспортов для удаления.
+              Вы уверены, что хотите удалить группу "{selectedGroupForEdit?.name}"?
+              Все паспорта в этой группе останутся, но потеряют привязку к ней.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-group">Отмена</AlertDialogCancel>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => selectedGroupForEdit && deleteGroupMutation.mutate(selectedGroupForEdit.id)}
-              data-testid="button-confirm-delete-group"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Удалить
             </AlertDialogAction>
