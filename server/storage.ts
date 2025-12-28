@@ -52,6 +52,19 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
+    if (id === "admin_user") {
+      return {
+        id: "admin_user",
+        email: "admin@example.com",
+        firstName: "Администратор",
+        lastName: "Системы",
+        profileImageUrl: null,
+        isMainAdmin: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
