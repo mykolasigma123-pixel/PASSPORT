@@ -16,6 +16,12 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 export const db = drizzle({ client: pool, schema });
+
+client
+  .connect()
+  .then(() => console.log("Подключение прошло"))
+  .catch((err) => console.error("Ошибка подключения:", err));
+
 async function initDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS groups (
