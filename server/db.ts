@@ -1,38 +1,29 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
-import * as schema from "@shared/schema";
+// dt.ts
+import pkg from "pg";
+const { Pool } = pkg;
 
-neonConfig.webSocketConstructor = ws;
-const { Client } = require("pg");
-
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
-
-export const pool = new Pool({
+// создаём пул подключений
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false }, // обязательно для Render
 });
-export const db = drizzle({ client: pool, schema });
 
-client
-  .connect()
-  .then(() => console.log("Подключение прошло"))
-  .catch((err) => console.error("Ошибка подключения:", err));
-
-async function initDatabase() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS groups (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-  `);
+// функция для создания таблицы groups
+async function createGroupsTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS groups (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL
+      );
+    `);
+    console.log("Таблица groups успешно создана!");
+  } catch (err) {
+    console.error("Ошибка подключения или создания таблицы:", err);
+  } finally {
+    await pool.end(); // закрываем пул
+  }
 }
 
-initDatabase().catch((err) => {
-  console.error("DB init error:", err);
-});
+// запускаем функцию
+createGroupsTable();
