@@ -13,11 +13,14 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+const SYSTEM_USER_ID = process.env.SYSTEM_USER_ID ?? "system";
 
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser & { isMainAdmin?: boolean; isActive?: boolean }): Promise<User>;
+  upsertUser(
+    user: UpsertUser & { isMainAdmin?: boolean; isActive?: boolean },
+  ): Promise<User>;
   getAllUsers(): Promise<User[]>;
   getAllAdmins(): Promise<User[]>;
   updateAdminStatus(id: string, isActive: boolean): Promise<User>;
@@ -34,7 +37,10 @@ export interface IStorage {
   getPerson(id: number): Promise<Person | undefined>;
   getPersonByPublicId(publicId: string): Promise<Person | undefined>;
   createPerson(person: InsertPerson & { publicId: string }): Promise<Person>;
-  updatePerson(id: number, person: Partial<InsertPerson & { qrCodeUrl?: string }>): Promise<Person>;
+  updatePerson(
+    id: number,
+    person: Partial<InsertPerson & { qrCodeUrl?: string }>,
+  ): Promise<Person>;
   deletePerson(id: number): Promise<void>;
   markPersonExpired(id: number): Promise<Person>;
 
@@ -44,9 +50,11 @@ export interface IStorage {
     entityType: string,
     entityId: string,
     performedBy: string,
-    details?: any
+    details?: any,
   ): Promise<ActivityLog>;
-  getAllActivityLogs(): Promise<Array<ActivityLog & { performedByUser?: User }>>;
+  getAllActivityLogs(): Promise<
+    Array<ActivityLog & { performedByUser?: User }>
+  >;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -69,7 +77,9 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async upsertUser(userData: UpsertUser & { isMainAdmin?: boolean; isActive?: boolean }): Promise<User> {
+  async upsertUser(
+    userData: UpsertUser & { isMainAdmin?: boolean; isActive?: boolean },
+  ): Promise<User> {
     const [user] = await db
       .insert(users)
       .values({
@@ -114,7 +124,15 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(groups).orderBy(groups.name);
     } catch (error: any) {
       if (error.message?.includes("endpoint has been disabled")) {
-        return [{ id: 1, name: "Демо-группа (База отключена)", createdBy: "admin_user", createdAt: new Date(), updatedAt: new Date() }];
+        return [
+          {
+            id: 1,
+            name: "Демо-группа (База отключена)",
+            createdBy: "admin_user",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ];
       }
       throw error;
     }
@@ -125,13 +143,18 @@ export class DatabaseStorage implements IStorage {
       const [group] = await db.select().from(groups).where(eq(groups.id, id));
       return group;
     } catch (error: any) {
-      if (error.message?.includes("endpoint has been disabled")) return undefined;
+      if (error.message?.includes("endpoint has been disabled"))
+        return undefined;
       throw error;
     }
   }
 
   async createGroup(groupData: InsertGroup): Promise<Group> {
-    const [group] = await db.insert(groups).values(groupData).returning();
+    const [group] = await db
+      .insert(groups)
+      .values({ ...groupData, createdBy: SYSTEM_USER_ID })
+      .returning();
+
     return group;
   }
 
@@ -161,21 +184,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPerson(id: number): Promise<Person | undefined> {
-    const [person] = await db.select().from(people).where(eq(people.id, id));
+    const [person] = await db
+      .insert(people)
+      .values({ ...personData, createdBy: SYSTEM_USER_ID })
+      .returning();
+
     return person;
   }
 
   async getPersonByPublicId(publicId: string): Promise<Person | undefined> {
-    const [person] = await db.select().from(people).where(eq(people.publicId, publicId));
+    const [person] = await db
+      .select()
+      .from(people)
+      .where(eq(people.publicId, publicId));
     return person;
   }
 
-  async createPerson(personData: InsertPerson & { publicId: string }): Promise<Person> {
+  async createPerson(
+    personData: InsertPerson & { publicId: string },
+  ): Promise<Person> {
     const [person] = await db.insert(people).values(personData).returning();
     return person;
   }
 
-  async updatePerson(id: number, personData: Partial<InsertPerson & { qrCodeUrl?: string }>): Promise<Person> {
+  async updatePerson(
+    id: number,
+    personData: Partial<InsertPerson & { qrCodeUrl?: string }>,
+  ): Promise<Person> {
     const [person] = await db
       .update(people)
       .set({ ...personData, updatedAt: new Date() })
@@ -203,7 +238,7 @@ export class DatabaseStorage implements IStorage {
     entityType: string,
     entityId: string,
     performedBy: string,
-    details?: any
+    details?: any,
   ): Promise<ActivityLog> {
     const [log] = await db
       .insert(activityLogs)
@@ -218,7 +253,9 @@ export class DatabaseStorage implements IStorage {
     return log;
   }
 
-  async getAllActivityLogs(): Promise<Array<ActivityLog & { performedByUser?: User }>> {
+  async getAllActivityLogs(): Promise<
+    Array<ActivityLog & { performedByUser?: User }>
+  > {
     const logs = await db
       .select({
         log: activityLogs,
